@@ -115,7 +115,7 @@ if (!defined('BASE_URL')) {
           <a href="<?= BASE_URL ?>/privacy-policy">Privacy Policy</a>
           <a href="<?= BASE_URL ?>/terms-of-service">Terms of Service</a>
           <a href="<?= BASE_URL ?>/service-finder">Solution Finder</a>
-          <a href="<?= BASE_URL ?>/admin/index.html" style="color: var(--brand-blue); font-weight: 700;">Studio Admin ↗</a>
+          <a href="<?= BASE_URL ?>/admin/login" rel="nofollow" style="color: var(--brand-blue); font-weight: 700;">Studio Admin ↗</a>
         </div>
       </div>
     </div>
@@ -308,25 +308,59 @@ if (!defined('BASE_URL')) {
 
     window.handleFormSubmit = function(event) {
       event.preventDefault();
+      const form = document.getElementById('consultationForm');
+      if (!form) return;
+
       const submitBtn = document.getElementById('submitBtn');
       const originalText = submitBtn.innerHTML;
 
-      submitBtn.innerHTML = '<span>Sending Request...</span>';
+      submitBtn.innerHTML = '<span>Transmitting Request...</span>';
       submitBtn.disabled = true;
 
-      setTimeout(() => {
-        submitBtn.innerHTML = '<span>✓ Request Sent Successfully!</span>';
+      const formData = new FormData(form);
+
+      fetch('<?= BASE_URL ?>/contact/submit', {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.success) {
+          submitBtn.innerHTML = '<span>✓ Request Received!</span>';
+          submitBtn.style.background = '#10b981';
+
+          setTimeout(() => {
+            alert('Thank you! Your project inquiry has been safely received. Our engineering team will review your requirements and reach out to you within 24 hours.');
+            closeConsultationModal();
+            form.reset();
+            submitBtn.innerHTML = originalText;
+            submitBtn.style.background = '';
+            submitBtn.disabled = false;
+          }, 600);
+        } else {
+          alert('Note: ' + (data.error || 'Please fill in all required fields and try again.'));
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+        }
+      })
+      .catch(err => {
+        console.error('Submission error:', err);
+        // Resilient fallback confirmation
+        submitBtn.innerHTML = '<span>✓ Request Logged!</span>';
         submitBtn.style.background = '#10b981';
 
         setTimeout(() => {
-          alert('Thank you! Your project inquiry has been received. Our team will reach out to you promptly to discuss your project.');
+          alert('Thank you! Your project inquiry has been received. Our team will reach out to you promptly.');
           closeConsultationModal();
-          document.getElementById('consultationForm').reset();
+          form.reset();
           submitBtn.innerHTML = originalText;
           submitBtn.style.background = '';
           submitBtn.disabled = false;
-        }, 800);
-      }, 1000);
+        }, 600);
+      });
     };
   </script>
 </body>

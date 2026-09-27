@@ -9,6 +9,177 @@ if (!defined('BASE_URL')) {
     define('BASE_URL', '');
 }
 ?>
+<?php
+$siteRoot = defined('BASE_URL') && !empty(BASE_URL) ? rtrim(BASE_URL, '/') : 'https://clickcodex.com';
+
+// 1. Build canonical absolute URL
+$rawCanonical = $seo['canonical_url'] ?? '';
+if (!empty($rawCanonical) && (str_starts_with($rawCanonical, 'http://') || str_starts_with($rawCanonical, 'https://'))) {
+    $canonicalUrl = $rawCanonical;
+} elseif (!empty($rawCanonical)) {
+    $canonicalUrl = $siteRoot . '/' . ltrim($rawCanonical, '/');
+} else {
+    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+    $scriptDir = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/'));
+    if ($scriptDir !== '/' && str_starts_with($currentPath, $scriptDir)) {
+        $currentPath = substr($currentPath, strlen($scriptDir));
+    }
+    $canonicalUrl = $siteRoot . ($currentPath === '' ? '/' : $currentPath);
+}
+
+// 2. Fallback social images & robots indexing
+$ogImage = !empty($seo['og_image']) ? $seo['og_image'] : ($siteRoot . '/public/assets/images/logo.png');
+$twitterImage = !empty($seo['twitter_image']) ? $seo['twitter_image'] : $ogImage;
+$robotsIndex = (!isset($seo['robots_index']) || $seo['robots_index']) ? 'index' : 'noindex';
+$robotsFollow = (!isset($seo['robots_follow']) || $seo['robots_follow']) ? 'follow' : 'nofollow';
+
+// 3. Prepare Schema Graph
+$schemaGraph = [
+    [
+        "@type" => "Organization",
+        "@id" => $siteRoot . "/#organization",
+        "name" => $settings['site_name'] ?? 'Click Codex Technologies',
+        "alternateName" => "ClickCodex",
+        "url" => $siteRoot,
+        "logo" => [
+            "@type" => "ImageObject",
+            "url" => $siteRoot . "/public/assets/images/logo.png",
+            "width" => 512,
+            "height" => 512
+        ],
+        "email" => $settings['contact_email'] ?? 'hello@clickcodex.com',
+        "telephone" => $settings['contact_phone'] ?? '+919876543210',
+        "description" => $settings['meta_description'] ?? 'Click Codex is an agile technology startup and creative studio providing practical web development, mobile apps, software solutions, UI/UX design, and short-form video production.',
+        "address" => [
+            "@type" => "PostalAddress",
+            "addressLocality" => "Bangalore",
+            "addressRegion" => "Karnataka",
+            "addressCountry" => "IN"
+        ],
+        "sameAs" => array_values(array_filter([
+            $settings['social_linkedin'] ?? 'https://linkedin.com',
+            $settings['social_twitter'] ?? 'https://twitter.com',
+            $settings['social_instagram'] ?? 'https://instagram.com',
+            $settings['social_youtube'] ?? 'https://youtube.com'
+        ]))
+    ],
+    [
+        "@type" => "WebSite",
+        "@id" => $siteRoot . "/#website",
+        "url" => $siteRoot,
+        "name" => "Click Codex",
+        "publisher" => [
+            "@id" => $siteRoot . "/#organization"
+        ],
+        "potentialAction" => [
+            "@type" => "SearchAction",
+            "target" => $siteRoot . "/blogs?q={search_term_string}",
+            "query-input" => "required name=search_term_string"
+        ]
+    ],
+    [
+        "@type" => "WebPage",
+        "@id" => $canonicalUrl . "#webpage",
+        "url" => $canonicalUrl,
+        "name" => $seo['meta_title'] ?? 'Click Codex | Ideas to Solutions - Technology & Creative Studio',
+        "description" => $seo['meta_description'] ?? 'Click Codex is an agile technology startup providing practical web development, custom software, UI/UX design, and creative media production.',
+        "isPartOf" => [
+            "@id" => $siteRoot . "/#website"
+        ],
+        "breadcrumb" => [
+            "@id" => $canonicalUrl . "#breadcrumb"
+        ]
+    ]
+];
+
+// Breadcrumbs Schema
+$breadcrumbItems = [
+    [
+        "@type" => "ListItem",
+        "position" => 1,
+        "name" => "Home",
+        "item" => $siteRoot . "/"
+    ]
+];
+if (!empty($breadcrumbs)) {
+    foreach ($breadcrumbs as $bPos => $bItem) {
+        $breadcrumbItems[] = [
+            "@type" => "ListItem",
+            "position" => $bPos + 2,
+            "name" => $bItem['name'],
+            "item" => (str_starts_with($bItem['url'], 'http') ? $bItem['url'] : ($siteRoot . '/' . ltrim($bItem['url'], '/')))
+        ];
+    }
+}
+$schemaGraph[] = [
+    "@type" => "BreadcrumbList",
+    "@id" => $canonicalUrl . "#breadcrumb",
+    "itemListElement" => $breadcrumbItems
+];
+
+// FAQ Schema if FAQs exist on page
+if (!empty($faqs) && is_array($faqs)) {
+    $faqEntities = [];
+    foreach ($faqs as $f) {
+        if (!empty($f['question']) && !empty($f['answer'])) {
+            $faqEntities[] = [
+                "@type" => "Question",
+                "name" => strip_tags($f['question']),
+                "acceptedAnswer" => [
+                    "@type" => "Answer",
+                    "text" => strip_tags($f['answer'])
+                ]
+            ];
+        }
+    }
+    if (!empty($faqEntities)) {
+        $schemaGraph[] = [
+            "@type" => "FAQPage",
+            "mainEntity" => $faqEntities
+        ];
+    }
+}
+
+// Blog Article Schema if single post
+if (!empty($post) && !empty($post['title'])) {
+    $schemaGraph[] = [
+        "@type" => "BlogPosting",
+        "@id" => $canonicalUrl . "#article",
+        "isPartOf" => [
+            "@id" => $canonicalUrl . "#webpage"
+        ],
+        "headline" => $post['title'],
+        "description" => $post['excerpt'] ?? '',
+        "inLanguage" => "en-US",
+        "mainEntityOfPage" => $canonicalUrl,
+        "datePublished" => !empty($post['published_at']) ? date('c', strtotime($post['published_at'])) : date('c'),
+        "dateModified" => !empty($post['updated_at']) ? date('c', strtotime($post['updated_at'])) : date('c'),
+        "author" => [
+            "@type" => "Person",
+            "name" => $post['author_name'] ?? 'Click Codex Editorial Team'
+        ],
+        "publisher" => [
+            "@id" => $siteRoot . "/#organization"
+        ],
+        "image" => !empty($post['featured_image']) ? $post['featured_image'] : $ogImage
+    ];
+}
+
+// Service Schema if single service detail
+if (!empty($service) && !empty($service['title'])) {
+    $schemaGraph[] = [
+        "@type" => "Service",
+        "@id" => $canonicalUrl . "#service",
+        "name" => $service['title'],
+        "serviceType" => $service['badge_label'] ?? $service['title'],
+        "description" => $service['short_description'] ?? '',
+        "provider" => [
+            "@id" => $siteRoot . "/#organization"
+        ],
+        "areaServed" => ["IN", "US", "AE", "GB", "Global"]
+    ];
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -20,98 +191,43 @@ if (!defined('BASE_URL')) {
   <meta name="description" content="<?= htmlspecialchars($seo['meta_description'] ?? 'Click Codex is an agile technology startup and creative studio providing practical web development, mobile apps, software solutions, UI/UX design, and short-form video production.') ?>" />
   <meta name="keywords" content="<?= htmlspecialchars($seo['meta_keywords'] ?? 'Click Codex, web development startup, mobile app development, UI UX design, digital marketing, website development India, custom software') ?>" />
   <meta name="author" content="<?= htmlspecialchars($settings['site_name'] ?? 'Click Codex Technologies') ?>" />
-  <meta name="robots" content="<?= !empty($seo['robots_index']) ? 'index' : 'noindex' ?>, <?= !empty($seo['robots_follow']) ? 'follow' : 'nofollow' ?>, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
-  <link rel="canonical" href="<?= htmlspecialchars($seo['canonical_url'] ?? (BASE_URL ?: 'https://clickcodex.com')) ?>" />
+  <meta name="robots" content="<?= $robotsIndex ?>, <?= $robotsFollow ?>, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+  <link rel="canonical" href="<?= htmlspecialchars($canonicalUrl) ?>" />
   <meta name="theme-color" content="<?= htmlspecialchars($settings['theme_color'] ?? '#0056d6') ?>" />
 
   <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="<?= htmlspecialchars($seo['og_type'] ?? 'website') ?>" />
+  <meta property="og:type" content="<?= htmlspecialchars($seo['og_type'] ?? (!empty($post) ? 'article' : 'website')) ?>" />
   <meta property="og:site_name" content="<?= htmlspecialchars($settings['site_name'] ?? 'Click Codex Technologies') ?>" />
-  <meta property="og:url" content="<?= htmlspecialchars($seo['canonical_url'] ?? (BASE_URL ?: 'https://clickcodex.com')) ?>" />
+  <meta property="og:url" content="<?= htmlspecialchars($canonicalUrl) ?>" />
   <meta property="og:title" content="<?= htmlspecialchars($seo['og_title'] ?? $seo['meta_title'] ?? 'Click Codex | Ideas to Solutions - Technology & Creative Studio') ?>" />
   <meta property="og:description" content="<?= htmlspecialchars($seo['og_description'] ?? $seo['meta_description'] ?? '') ?>" />
-  <meta property="og:image" content="<?= htmlspecialchars($seo['og_image'] ?? (BASE_URL . '/public/assets/images/logo.png')) ?>" />
-  <meta property="og:image:alt" content="<?= htmlspecialchars($settings['site_name'] ?? 'Click Codex') ?> Logo & Digital Solutions" />
+  <meta property="og:image" content="<?= htmlspecialchars($ogImage) ?>" />
+  <meta property="og:image:alt" content="<?= htmlspecialchars($settings['site_name'] ?? 'Click Codex') ?> Digital Solutions" />
+  <meta property="og:locale" content="en_US" />
 
-  <!-- Twitter / X -->
+  <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="<?= htmlspecialchars($seo['twitter_card'] ?? 'summary_large_image') ?>" />
   <meta name="twitter:site" content="@ClickCodex" />
   <meta name="twitter:creator" content="@ClickCodex" />
   <meta name="twitter:title" content="<?= htmlspecialchars($seo['twitter_title'] ?? $seo['meta_title'] ?? 'Click Codex | Ideas to Solutions') ?>" />
   <meta name="twitter:description" content="<?= htmlspecialchars($seo['twitter_description'] ?? $seo['meta_description'] ?? '') ?>" />
-  <meta name="twitter:image" content="<?= htmlspecialchars($seo['twitter_image'] ?? (BASE_URL . '/public/assets/images/logo.png')) ?>" />
+  <meta name="twitter:image" content="<?= htmlspecialchars($twitterImage) ?>" />
 
-  <!-- Favicon -->
+  <!-- Favicon, App Icons & Web Manifest -->
   <link rel="icon" type="image/png" href="<?= BASE_URL ?>/public/assets/images/logo.png" />
+  <link rel="apple-touch-icon" href="<?= BASE_URL ?>/public/assets/images/logo.png" />
+  <link rel="manifest" href="<?= BASE_URL ?>/public/site.webmanifest" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
-  <!-- Google Fonts: Poppins (Display) & Plus Jakarta Sans (Modern Body) & Space Mono (Tech) -->
+  <!-- Google Fonts: Plus Jakarta Sans, Poppins & Space Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
 
-  <!-- Schema.org JSON-LD Structured Data Schema -->
+  <!-- Schema.org JSON-LD Structured Data Graph -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "Organization",
-        "@id": "https://clickcodex.com/#organization",
-        "name": "<?= addslashes($settings['site_name'] ?? 'ClickCodex Technologies') ?>",
-        "url": "https://clickcodex.com",
-        "logo": {
-          "@type": "ImageObject",
-          "url": "https://clickcodex.com/logo.png"
-        },
-        "sameAs": [
-          "<?= addslashes($settings['social_linkedin'] ?? 'https://linkedin.com') ?>",
-          "<?= addslashes($settings['social_twitter'] ?? 'https://twitter.com') ?>",
-          "<?= addslashes($settings['social_instagram'] ?? 'https://instagram.com') ?>",
-          "<?= addslashes($settings['social_youtube'] ?? 'https://youtube.com') ?>"
-        ]
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://clickcodex.com/#website",
-        "url": "https://clickcodex.com",
-        "name": "ClickCodex",
-        "publisher": {
-          "@id": "https://clickcodex.com/#organization"
-        }
-      },
-      {
-        "@type": "WebSite",
-        "@id": "https://clickcodex.com/index.html#webpage",
-        "url": "https://clickcodex.com/index.html",
-        "name": "<?= addslashes($seo['meta_title'] ?? 'Click Codex | Ideas to Solutions - Technology & Creative Studio') ?>",
-        "description": "<?= addslashes($seo['meta_description'] ?? '') ?>",
-        "isPartOf": {
-          "@id": "https://clickcodex.com/#website"
-        }
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "<?= BASE_URL ?>/"
-          }
-          <?php if (!empty($breadcrumbs)): ?>
-            <?php foreach ($breadcrumbs as $bPos => $bItem): ?>
-            ,{
-              "@type": "ListItem",
-              "position": <?= $bPos + 2 ?>,
-              "name": "<?= addslashes($bItem['name']) ?>",
-              "item": "<?= addslashes($bItem['url']) ?>"
-            }
-            <?php endforeach; ?>
-          <?php endif; ?>
-        ]
-      }
-    ]
-  }
+  <?= json_encode(["@context" => "https://schema.org", "@graph" => $schemaGraph], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?>
   </script>
 
   <!-- Complete Exact Stylesheet -->

@@ -61,6 +61,13 @@ $router->get('terms-of-service.html', 'LegalController@terms');
 $router->get('terms', 'LegalController@terms');
 
 // =============================================================================
+// SEARCH ENGINE OPTIMIZATION (SEO) & CRAWLER ROUTES
+// =============================================================================
+$router->get('sitemap.xml', 'SeoController@sitemap');
+$router->get('sitemap', 'SeoController@sitemap');
+$router->get('robots.txt', 'SeoController@robots');
+
+// =============================================================================
 // ADMIN AUTHENTICATION ROUTES
 // =============================================================================
 $router->get('admin', 'Admin/AuthController@login');

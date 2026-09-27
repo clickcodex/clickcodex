@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /storage/
+Disallow: /app/
+Disallow: /vendor/
+Disallow: /database/
+Disallow: /tests/
+
+Sitemap: https://clickcodex.com/sitemap.xml

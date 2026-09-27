@@ -49,7 +49,7 @@ include __DIR__ . '/layout/header.php';
                 <div class="deck-card" data-index="<?= $dIdx ?>" onclick="focusDeckCard(<?= $dIdx ?>)">
                   <div class="deck-card-banner">
                     <span class="deck-card-tag"><?= htmlspecialchars($dCard['tag']) ?></span>
-                    <img src="<?= htmlspecialchars($dCard['image']) ?>" alt="<?= htmlspecialchars($dCard['title']) ?>" />
+                    <img src="<?= htmlspecialchars($dCard['image']) ?>" alt="<?= htmlspecialchars($dCard['title']) ?>" loading="lazy" decoding="async" />
                   </div>
                   <div class="deck-card-body">
                     <h3 class="deck-card-title"><?= htmlspecialchars($dCard['title']) ?></h3>

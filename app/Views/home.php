@@ -235,7 +235,9 @@ include __DIR__ . '/layout/header.php';
 
             <div class="about-image-wrap">
               <img src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80" 
-                   alt="Click Codex Team Collaboration" 
+                   alt="Click Codex Team Collaboration & Digital Engineering" 
+                   loading="lazy"
+                   decoding="async"
                    id="aboutDisplayImage" />
             </div>
           </div>
@@ -482,7 +484,9 @@ include __DIR__ . '/layout/header.php';
           <?php $firstCs = $caseStudies[0] ?? null; ?>
           <div class="portfolio-canvas-wrap">
             <img src="<?= htmlspecialchars($firstCs['featured_image'] ?? 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1000&q=80') ?>" 
-                 alt="Project Showcase" 
+                 alt="<?= htmlspecialchars($firstCs['title'] ?? 'Click Codex Project Showcase') ?>" 
+                 loading="lazy"
+                 decoding="async"
                  class="portfolio-canvas-img active" 
                  id="portfolioCanvasImage" />
             <div class="portfolio-canvas-info">
@@ -566,7 +570,7 @@ include __DIR__ . '/layout/header.php';
                     "<?= htmlspecialchars($t['testimonial_quote']) ?>"
                   </p>
                   <div class="testimonial-user">
-                    <img src="<?= htmlspecialchars($t['client_avatar']) ?>" alt="<?= htmlspecialchars($t['client_name']) ?>" class="user-avatar" />
+                    <img src="<?= htmlspecialchars($t['client_avatar']) ?>" alt="<?= htmlspecialchars($t['client_name']) ?> Avatar" loading="lazy" decoding="async" class="user-avatar" />
                     <div class="user-info">
                       <h5><?= htmlspecialchars($t['client_name']) ?></h5>
                       <p><?= htmlspecialchars($t['client_position']) ?>, <?= htmlspecialchars($t['client_company']) ?></p>

@@ -10,7 +10,7 @@ if (!defined('BASE_URL')) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>404 - Page Not Found | Click Codex</title>
+  <title>500 - Server Error | Click Codex</title>
   <meta name="robots" content="noindex, nofollow" />
   <meta name="theme-color" content="#0056d6" />
   <link rel="icon" type="image/png" href="<?= BASE_URL ?>/public/assets/images/logo.png" />
@@ -30,19 +30,19 @@ if (!defined('BASE_URL')) {
       text-align: center;
       padding: 60px 24px;
       position: relative;
-      background: radial-gradient(circle at 50% 30%, rgba(0, 86, 214, 0.15) 0%, rgba(6, 9, 19, 0.98) 70%);
+      background: radial-gradient(circle at 50% 30%, rgba(239, 68, 68, 0.12) 0%, rgba(6, 9, 19, 0.98) 70%);
     }
     .error-code {
       font-family: 'Space Mono', monospace;
       font-size: clamp(5rem, 15vw, 10rem);
       font-weight: 900;
       line-height: 1;
-      background: linear-gradient(135deg, #0056d6 0%, #38bdf8 50%, #818cf8 100%);
+      background: linear-gradient(135deg, #ef4444 0%, #f97316 50%, #facc15 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 12px;
       letter-spacing: -4px;
-      text-shadow: 0 0 80px rgba(0, 86, 214, 0.4);
+      text-shadow: 0 0 80px rgba(239, 68, 68, 0.4);
     }
     .error-badge {
       display: inline-flex;
@@ -77,54 +77,27 @@ if (!defined('BASE_URL')) {
       justify-content: center;
       flex-wrap: wrap;
     }
-    .error-quick-links {
-      margin-top: 48px;
-      padding-top: 32px;
-      border-top: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      gap: 24px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .error-quick-links a {
-      color: #94a3b8;
-      font-size: 0.95rem;
-      text-decoration: none;
-      transition: color 0.2s ease;
-    }
-    .error-quick-links a:hover {
-      color: #38bdf8;
-    }
   </style>
 </head>
 <body>
   <div class="error-page-wrapper">
     <div class="error-badge">
-      <span>●</span> Error 404: Route Not Found
+      <span>●</span> Error 500: Internal Processing Failure
     </div>
-    <div class="error-code">404</div>
-    <h1 class="error-title">Looking for Something That Isn't Here?</h1>
+    <div class="error-code">500</div>
+    <h1 class="error-title">Our System Encountered an Anomaly</h1>
     <p class="error-desc">
-      The page you requested may have been moved, renamed, or is temporarily unavailable. Let's get you back on track to explore our engineering and creative solutions.
+      We apologize for the inconvenience. Our engineering telemetry has logged this incident and our team is already reviewing it. Please try reloading or head back to the home page.
     </p>
 
     <div class="error-actions">
       <a href="<?= BASE_URL ?>/" class="btn-primary" style="padding: 14px 28px;">
-        <span>Return to Homepage</span>
+        <span>Return to Safety</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
       </a>
-      <a href="<?= BASE_URL ?>/services" class="btn-outline" style="padding: 14px 28px; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 9999px; text-decoration: none; font-weight: 600;">
-        Explore Services
+      <a href="<?= BASE_URL ?>/contactus" class="btn-outline" style="padding: 14px 28px; border: 1px solid rgba(255,255,255,0.15); color: #fff; border-radius: 9999px; text-decoration: none; font-weight: 600;">
+        Report Incident
       </a>
-    </div>
-
-    <div class="error-quick-links">
-      <a href="<?= BASE_URL ?>/aboutus">About Us</a>
-      <a href="<?= BASE_URL ?>/portfolio">Portfolio</a>
-      <a href="<?= BASE_URL ?>/service-finder">Solution Advisor</a>
-      <a href="<?= BASE_URL ?>/pricing">Pricing</a>
-      <a href="<?= BASE_URL ?>/blogs">Blogs</a>
-      <a href="<?= BASE_URL ?>/contactus">Contact Support</a>
     </div>
   </div>
 </body>

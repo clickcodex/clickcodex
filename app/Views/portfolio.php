@@ -153,7 +153,7 @@ if (!empty($caseStudies)) {
           ?>
             <div class="project-card" data-category="<?= $catSlug ?> all" data-tech="<?= $searchTech ?>" data-slug="<?= htmlspecialchars($cs['slug']) ?>">
               <div class="project-media-wrap">
-                <img src="<?= htmlspecialchars($cs['featured_image']) ?>" alt="<?= htmlspecialchars($cs['title']) ?>" loading="lazy" />
+                <img src="<?= htmlspecialchars($cs['featured_image']) ?>" alt="<?= htmlspecialchars($cs['title']) ?>" loading="lazy" decoding="async" />
                 <span class="project-category-badge"><?= strtoupper($catName) ?></span>
                 <?php if (!empty($cs['result_badge'])): ?>
                   <span class="project-result-tag"><?= htmlspecialchars($cs['result_badge']) ?></span>

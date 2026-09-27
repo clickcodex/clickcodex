@@ -452,7 +452,9 @@ foreach ($teamMembers as $m) {
             <div class="constellation-active-preview" id="constellationPreview">
               <div class="preview-avatar-group">
                 <img src="<?= htmlspecialchars($jsTeam[0]['avatar'] ?? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=face') ?>" 
-                     alt="Role Avatar" 
+                     alt="Click Codex Team Member Avatar" 
+                     loading="lazy"
+                     decoding="async"
                      class="preview-avatar-img" 
                      id="nodeAvatar" />
                 <div class="preview-text">
