@@ -15,7 +15,7 @@ require_once __DIR__ . '/layout/header.php';
   <section class="legal-hero">
     <div class="container">
       <h1><?= htmlspecialchars($page['title'] ?? 'Terms of Service') ?></h1>
-      <p>Effective Date: September 2026 • <?= htmlspecialchars($settings['site_name'] ?? 'ClickCodex Technologies') ?></p>
+      <p>Effective Date: <?= htmlspecialchars($settings['terms_effective_date'] ?? 'September 2026') ?> • <?= htmlspecialchars($settings['site_name'] ?? 'ClickCodex Technologies') ?></p>
     </div>
   </section>
 

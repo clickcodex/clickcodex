@@ -69,7 +69,7 @@ require_once __DIR__ . '/layout/header.php';
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
             </a>
 
-            <a href="https://wa.me/<?= $cleanWhatsapp ?>?text=<?= urlencode('Hi Click Codex, I would like to discuss a project') ?>" 
+            <a href="https://wa.me/<?= $cleanWhatsapp ?>?text=<?= urlencode($settings['whatsapp_default_message'] ?? 'Hi Click Codex, I would like to discuss a project') ?>" 
                target="_blank" rel="noopener noreferrer" class="whatsapp-btn" style="padding: 12px 24px; font-size: 0.95rem;">
               <svg viewBox="0 0 24 24" style="width: 18px; height: 18px;">
                 <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.077-1.118-.057-.26-.084-.589-.201-.989-.374-1.745-.758-2.887-2.531-2.975-2.648-.088-.116-.71-0.947-.71-1.807 0-.859.45-1.282.61-1.458.16-.176.35-.22.47-.22.12 0 .24.002.34.007.11.005.26-.042.41.319.15.362.51 1.242.55 1.33.04.088.07.191.01.308-.06.117-.09.19-.18.293-.09.103-.19.23-.27.309-.09.088-.19.183-.08.371.11.188.48.793 1.03 1.283.71.633 1.31.829 1.49.919.18.09.29.076.4-.047.11-.123.47-.549.6-.738.13-.189.26-.158.44-.092.18.066 1.14.537 1.34.636.2.099.33.147.38.232.05.085.05.495-.09.9z"/>
@@ -105,18 +105,20 @@ require_once __DIR__ . '/layout/header.php';
         </div>
 
         <!-- Card 2: Phone & WhatsApp -->
-        <div class="channel-card warm" onclick="copyAndToast('<?= htmlspecialchars($cleanPhone) ?>', 'Direct Phone Number copied to clipboard!')">
+        <div class="channel-card warm" onclick="window.open('https://wa.me/<?= $cleanWhatsapp ?>?text=<?= urlencode($settings['whatsapp_default_message'] ?? 'Hi ClickCodex, I would like to discuss a project') ?>', '_blank')">
           <div>
-            <div class="channel-icon-wrap">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+            <div class="channel-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.077-1.118-.057-.26-.084-.589-.201-.989-.374-1.745-.758-2.887-2.531-2.975-2.648-.088-.116-.71-0.947-.71-1.807 0-.859.45-1.282.61-1.458.16-.176.35-.22.47-.22.12 0 .24.002.34.007.11.005.26-.042.41.319.15.362.51 1.242.55 1.33.04.088.07.191.01.308-.06.117-.09.19-.18.293-.09.103-.19.23-.27.309-.09.088-.19.183-.08.371.11.188.48.793 1.03 1.283.71.633 1.31.829 1.49.919.18.09.29.076.4-.047.11-.123.47-.549.6-.738.13-.189.26-.158.44-.092.18.066 1.14.537 1.34.636.2.099.33.147.38.232.05.085.05.495-.09.9z"/>
+              </svg>
             </div>
-            <span class="channel-tag" style="color: var(--brand-orange, #ff6a00);">Priority Call & Chat</span>
+            <span class="channel-tag" style="color: #059669;">Instant WhatsApp & Call</span>
             <h3 class="channel-title">Direct Client Hotline</h3>
-            <p class="channel-val"><?= htmlspecialchars($settings['contact_phone']) ?></p>
+            <p class="channel-val"><?= htmlspecialchars($settings['whatsapp_number'] ?? $settings['contact_phone'] ?? '+919876543210') ?></p>
           </div>
-          <span class="channel-action-btn">
-            <span>Click to Copy Phone</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <span class="channel-action-btn" style="color: #059669;">
+            <span>Click to Chat WhatsApp</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </span>
         </div>
 

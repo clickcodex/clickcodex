@@ -1330,7 +1330,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Click Codex Admin','admin@clickcodex.com','$2y$10$wK3V.NfQvM1qHqBv88c5hOMW3Fp6xVqR8m3IuL9uI7jWbL6ZkQ6mC','super_admin','assets/images/logo.png','+91 0000000000',NULL,1,NULL,'2026-09-25 13:26:44','2026-09-25 13:26:44');
+INSERT INTO `users` VALUES (1,'Click Codex Admin','admin@clickcodex.com','y$rE67mkqFE6YHZFAIAKZWKuYpgcYRG698unnkAQcFsp/8.Y3cUHYR.','super_admin','assets/images/logo.png','+91 0000000000',NULL,1,NULL,'2026-09-25 13:26:44','2026-09-25 13:26:44');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

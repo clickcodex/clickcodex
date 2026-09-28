@@ -176,9 +176,17 @@ class ContactModel {
         $phone = trim((string)($data['phone'] ?? ''));
         $companyName = trim((string)($data['company_name'] ?? ''));
         $interestedService = trim((string)($data['interested_service'] ?? ''));
-        $selectedServices = is_array($data['selected_services'] ?? null) 
-            ? json_encode($data['selected_services'], JSON_UNESCAPED_UNICODE) 
-            : (string)($data['selected_services'] ?? '');
+        if (is_array($data['selected_services'] ?? null)) {
+            $selectedServices = json_encode(array_values($data['selected_services']), JSON_UNESCAPED_UNICODE);
+        } elseif (!empty($data['selected_services'])) {
+            $val = (string)$data['selected_services'];
+            $decoded = json_decode($val, true);
+            $selectedServices = (json_last_error() === JSON_ERROR_NONE && is_array($decoded))
+                ? $val
+                : json_encode([$val], JSON_UNESCAPED_UNICODE);
+        } else {
+            $selectedServices = '[]';
+        }
         $budgetBracket = trim((string)($data['budget_bracket'] ?? ''));
         $timeline = trim((string)($data['timeline'] ?? ''));
         $message = trim((string)($data['message'] ?? ''));
@@ -228,13 +236,43 @@ class ContactModel {
         );
 
         if ($stmt->execute()) {
+            $inquiryId = (int)$stmt->insert_id;
+
+            // Dispatch to real-time notification hub & webhooks
+            try {
+                $adminModel = new \App\Models\Admin\AdminModel();
+                $adminModel->addSystemNotification(
+                    'inquiry',
+                    'New Inquiry: ' . $fullName,
+                    "Commercial lead from {$fullName}" . ($companyName ? " ({$companyName})" : "") . " regarding " . ($interestedService ?: "custom solution") . ". Budget: " . ($budgetBracket ?: "Not specified"),
+                    '/admin/inquiries?id=' . $inquiryId
+                );
+
+                $adminModel->triggerWebhooks('inquiry.created', [
+                    'inquiry_id' => $inquiryId,
+                    'inquiry_type' => $inquiryType,
+                    'full_name' => $fullName,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'company_name' => $companyName,
+                    'interested_service' => $interestedService,
+                    'budget_bracket' => $budgetBracket,
+                    'timeline' => $timeline,
+                    'message' => $message,
+                    'source_page' => $sourcePage,
+                    'timestamp' => date('c')
+                ]);
+            } catch (\Throwable $e) {
+                error_log("Webhook/Notification dispatch notice: " . $e->getMessage());
+            }
+
             return [
                 'success' => true,
-                'inquiry_id' => $stmt->insert_id,
+                'inquiry_id' => $inquiryId,
                 'message' => 'Thank you! Your requirements have been submitted under mutual NDA. A ClickCodex technical director will reach out to you within 2 hours.'
             ];
         }
 
-        return ['success' => false, 'error' => 'Failed to record your inquiry. Please try again.'];
+        return ['success' => false, 'error' => 'Failed to record your inquiry: ' . $stmt->error];
     }
 }

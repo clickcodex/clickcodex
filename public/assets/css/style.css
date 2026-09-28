@@ -307,31 +307,64 @@
       gap: 14px;
     }
 
-    /* WhatsApp Quick Button (Highly converts Indian & Global clients) */
+    /* WhatsApp Quick Button (Icon Only) */
     .whatsapp-btn {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 9px 18px;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      padding: 0;
       border-radius: var(--radius-full);
       background: #25d366;
       color: #ffffff;
-      font-size: 0.85rem;
-      font-weight: 600;
-      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.35);
+      transition: all 0.25s ease;
+      flex-shrink: 0;
+      text-decoration: none;
     }
 
     .whatsapp-btn:hover {
       background: #20ba59;
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+      transform: scale(1.08) translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
+      color: #ffffff;
     }
 
     .whatsapp-btn svg {
-      width: 17px;
-      height: 17px;
-      fill: currentColor;
+      width: 21px;
+      height: 21px;
+      fill: #ffffff;
+      display: block;
+    }
+
+    /* Navbar Talk To Us Action Button */
+    .nav-talk-btn {
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 22px;
+      border-radius: var(--radius-full);
+      background: var(--gradient-blue-cyan);
+      color: #ffffff !important;
+      font-family: var(--font-display);
+      font-size: 0.9rem;
+      font-weight: 700;
+      white-space: nowrap;
+      text-decoration: none;
+      box-shadow: 0 4px 16px rgba(0, 86, 214, 0.3);
+      transition: all 0.25s ease;
+      flex-shrink: 0;
+      border: none;
+      cursor: pointer;
+    }
+
+    .nav-talk-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0, 86, 214, 0.45);
+      color: #ffffff !important;
     }
 
     /* Primary CTA Button */

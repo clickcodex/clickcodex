@@ -178,6 +178,12 @@ $topbarTitle = $topbarTitle ?? 'Studio Console';
                   </div>
                 <?php endif; ?>
               </div>
+              <div style="padding: 10px 16px; background: #f8fafc; border-top: 1px solid var(--border-color, #e2e8f0); text-align: center;">
+                <a href="<?= BASE_URL ?>/admin/notifications" style="font-size: 0.78rem; font-weight: 700; color: var(--admin-blue, #0056d6); text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;">
+                  <span>Open Notifications Center</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </a>
+              </div>
             </div>
           </div>
 

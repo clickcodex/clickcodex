@@ -153,7 +153,59 @@ $router->group(fn() => \App\Middleware\AuthMiddleware::check(), function() use (
     $router->get('admin/metrics', 'Admin/AnalyticsController@index');
     $router->get('admin/analytics/data', 'Admin/AnalyticsController@getData');
     $router->get('admin/analytics/export', 'Admin/AnalyticsController@exportCsv');
+
+    // Global Site Settings & Studio Configuration Routes
+    $router->get('admin/settings', 'Admin/SettingsController@index');
+    $router->get('admin/site-settings', 'Admin/SettingsController@index');
+    $router->get('admin/configuration', 'Admin/SettingsController@index');
+    $router->post('admin/settings/save', 'Admin/SettingsController@saveBatch');
+    $router->post('admin/settings/save-single', 'Admin/SettingsController@saveSingle');
+    $router->post('admin/settings/create', 'Admin/SettingsController@create');
+    $router->post('admin/settings/delete', 'Admin/SettingsController@delete');
+    $router->get('admin/settings/export', 'Admin/SettingsController@export');
+    $router->post('admin/settings/import', 'Admin/SettingsController@import');
+    $router->post('admin/settings/clear-cache', 'Admin/SettingsController@clearCache');
+    // Executive Reporting Engine Routes
+    $router->get('admin/reporting', 'Admin/ReportingController@index');
+    $router->get('admin/reports', 'Admin/ReportingController@index');
+    $router->get('admin/reporting/data', 'Admin/ReportingController@getData');
+    $router->get('admin/reporting/export', 'Admin/ReportingController@exportCsv');
+
+    // Third-Party Webhook & CRM Integrations Routes
+    $router->get('admin/integrations', 'Admin/IntegrationsController@index');
+    $router->get('admin/webhooks', 'Admin/IntegrationsController@index');
+    $router->post('admin/webhook/save', 'Admin/IntegrationsController@save');
+    $router->post('admin/webhook/delete', 'Admin/IntegrationsController@delete');
+    $router->post('admin/webhook/test', 'Admin/IntegrationsController@test');
+
+    // Centralized Notifications Center Routes
+    $router->get('admin/notifications', 'Admin/NotificationsController@index');
+    $router->post('admin/notifications/mark-read', 'Admin/NotificationsController@markRead');
+    $router->post('admin/notifications/mark-all-read', 'Admin/NotificationsController@markAllRead');
+    $router->post('admin/notifications/clear', 'Admin/NotificationsController@clear');
+
+    // Data Export & System Snapshot Center Routes
+    $router->get('admin/data-export', 'Admin/DataExportController@index');
+    $router->get('admin/backups', 'Admin/DataExportController@index');
+    $router->get('admin/data-export/sql', 'Admin/DataExportController@downloadSql');
+    $router->get('admin/data-export/json', 'Admin/DataExportController@downloadJson');
+    $router->get('admin/data-export/csv', 'Admin/DataExportController@downloadCsv');
+
+    // RESTful API Access & Secret Key Generator Routes
+    $router->get('admin/api-access', 'Admin/ApiAccessController@index');
+    $router->get('admin/api-keys', 'Admin/ApiAccessController@index');
+    $router->post('admin/api-key/create', 'Admin/ApiAccessController@create');
+    $router->post('admin/api-key/toggle', 'Admin/ApiAccessController@toggle');
+    $router->post('admin/api-key/revoke', 'Admin/ApiAccessController@revoke');
 });
+
+// =============================================================================
+// PUBLIC REST API v1 ENDPOINTS
+// =============================================================================
+$router->get('api/v1/status', 'ApiController@status');
+$router->get('api/v1/services', 'ApiController@services');
+$router->get('api/v1/articles', 'ApiController@articles');
+$router->post('api/v1/inquiries', 'ApiController@createInquiry');
 
 // =============================================================================
 // RESOLVE ROUTE

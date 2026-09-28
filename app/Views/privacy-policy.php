@@ -15,7 +15,7 @@ require_once __DIR__ . '/layout/header.php';
   <section class="legal-hero">
     <div class="container">
       <h1><?= htmlspecialchars($page['title'] ?? 'Privacy Policy') ?></h1>
-      <p>Last Updated: September 2026 • <?= htmlspecialchars($settings['site_name'] ?? 'ClickCodex Technologies') ?></p>
+      <p>Last Updated: <?= htmlspecialchars($settings['privacy_effective_date'] ?? 'September 2026') ?> • <?= htmlspecialchars($settings['site_name'] ?? 'ClickCodex Technologies') ?></p>
     </div>
   </section>
 

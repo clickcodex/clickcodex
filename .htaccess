@@ -41,8 +41,11 @@ ServerSignature Off
         </IfModule>
     </FilesMatch>
 
-    # 2. CANONICAL ROUTING TO FRONT CONTROLLER
+    # 2. ASSET REWRITE & CANONICAL ROUTING TO FRONT CONTROLLER
     # --------------------------------------------------------------------------
+    # Seamlessly route assets/... to public/assets/...
+    RewriteRule ^assets/(.*)$ public/assets/$1 [L]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [QSA,L]

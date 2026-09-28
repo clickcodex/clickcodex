@@ -23,29 +23,47 @@ if (!defined('BASE_URL')) {
       <div class="footer-grid">
         <!-- Col 1: Brand Info -->
         <div class="footer-brand-col">
+          <?php 
+            $footerLogo = !empty($settings['site_logo']) 
+              ? ((str_starts_with($settings['site_logo'], 'http') || str_starts_with($settings['site_logo'], '/')) ? $settings['site_logo'] : (BASE_URL . '/' . ltrim($settings['site_logo'], '/'))) 
+              : (BASE_URL . '/public/assets/images/logo.png');
+          ?>
           <a href="<?= BASE_URL ?>/" class="brand-logo-wrap" aria-label="ClickCodex Home">
-            <img src="<?= BASE_URL ?>/public/assets/images/logo.png" alt="ClickCodex Logo" class="brand-logo-img" />
+            <img src="<?= htmlspecialchars($footerLogo) ?>" alt="ClickCodex Logo" class="brand-logo-img" />
             <div class="brand-name-group">
               <span class="brand-title">Click<span>codex</span></span>
               <span class="brand-subtext"><?= htmlspecialchars($settings['site_tagline'] ?? 'Ideas To Solutions') ?></span>
             </div>
           </a>
           <p>
-            Click Codex is an early-stage technology startup providing practical web development, mobile apps, software solutions, UI/UX design, marketing, and creative short-form video production.
+            <?= htmlspecialchars($settings['company_overview'] ?? 'Click Codex is an agile technology startup providing practical web development, mobile apps, software solutions, UI/UX design, marketing, and creative short-form video production.') ?>
           </p>
           <div class="social-media-pills">
-            <a href="<?= htmlspecialchars($settings['social_linkedin'] ?? 'https://linkedin.com') ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="LinkedIn">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.64 1.64 0 1 0 0-3.28 1.64 1.64 0 0 0 0 3.28m1.39 9.74v-8.37H5.07v8.37h2.78z"/></svg>
-            </a>
-            <a href="<?= htmlspecialchars($settings['social_twitter'] ?? 'https://twitter.com') ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="Twitter">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            </a>
-            <a href="<?= htmlspecialchars($settings['social_instagram'] ?? 'https://instagram.com') ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="Instagram">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.07-1.645-.07-4.85s.012-3.584.07-4.85c.148-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.85-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.058-1.281.072-1.689.072-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/></svg>
-            </a>
-            <a href="<?= htmlspecialchars($settings['social_youtube'] ?? 'https://youtube.com') ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="YouTube">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
-            </a>
+            <?php if (!empty($settings['social_linkedin'])): ?>
+              <a href="<?= htmlspecialchars($settings['social_linkedin']) ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="LinkedIn">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.46 8.76a1.64 1.64 0 1 0 0-3.28 1.64 1.64 0 0 0 0 3.28m1.39 9.74v-8.37H5.07v8.37h2.78z"/></svg>
+              </a>
+            <?php endif; ?>
+            <?php if (!empty($settings['social_twitter'])): ?>
+              <a href="<?= htmlspecialchars($settings['social_twitter']) ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="Twitter">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </a>
+            <?php endif; ?>
+            <?php if (!empty($settings['social_instagram'])): ?>
+              <a href="<?= htmlspecialchars($settings['social_instagram']) ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="Instagram">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.85s-.011 3.584-.069 4.85c-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07s-3.584-.012-4.85-.07c-3.252-.148-4.771-1.691-4.919-4.919-.058-1.265-.07-1.645-.07-4.85s.012-3.584.07-4.85c.148-3.225 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.85-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948s.014 3.667.072 4.947c.2 4.359 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072s3.667-.014 4.947-.072c4.359-.2 6.78-2.618 6.98-6.98.058-1.281.072-1.689.072-4.948s-.014-3.667-.072-4.947c-.2-4.359-2.618-6.78-6.98-6.98-1.281-.059-1.689-.073-4.948-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.162 6.162 6.162 6.162-2.759 6.162-6.162-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4s1.791-4 4-4 4 1.79 4 4-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44 1.441-.645 1.441-1.44-.645-1.44-1.441-1.44z"/></svg>
+              </a>
+            <?php endif; ?>
+            <?php if (!empty($settings['social_youtube'])): ?>
+              <a href="<?= htmlspecialchars($settings['social_youtube']) ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="YouTube">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+              </a>
+            <?php endif; ?>
+            <?php if (!empty($settings['social_github'])): ?>
+              <a href="<?= htmlspecialchars($settings['social_github']) ?>" target="_blank" rel="noopener noreferrer" class="social-pill" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+              </a>
+            <?php endif; ?>
           </div>
         </div>
 
@@ -85,15 +103,29 @@ if (!defined('BASE_URL')) {
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
               <div>
                 <strong>Email Inquiries</strong>
-                <p><?= htmlspecialchars($settings['contact_email'] ?? 'contact@clickcodex.com') ?></p>
+                <p><a href="mailto:<?= htmlspecialchars($settings['contact_email'] ?? 'contact@clickcodex.com') ?>" style="color: inherit; text-decoration: none;"><?= htmlspecialchars($settings['contact_email'] ?? 'contact@clickcodex.com') ?></a></p>
               </div>
             </div>
 
+            <?php 
+              $footerWaNumber = $settings['whatsapp_number'] ?? $settings['contact_whatsapp'] ?? '+919876543210';
+              $footerWaClean = preg_replace('/[^0-9]/', '', $footerWaNumber);
+              $footerWaMsg = urlencode($settings['whatsapp_default_message'] ?? 'Hi ClickCodex, I would like to inquire about a project');
+            ?>
             <div class="contact-info-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
               <div>
-                <strong>Direct Phone / WhatsApp</strong>
-                <p><?= htmlspecialchars($settings['contact_phone'] ?? '+91 (Contact Available Upon Inquiry)') ?></p>
+                <strong>Direct WhatsApp & Phone</strong>
+                <p>
+                  <a href="https://wa.me/<?= $footerWaClean ?>?text=<?= $footerWaMsg ?>" target="_blank" rel="noopener noreferrer" style="color: #10b981; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="Chat directly on WhatsApp">
+                    <span>💬 WhatsApp:</span> <?= htmlspecialchars($footerWaNumber) ?>
+                  </a>
+                </p>
+                <?php if (!empty($settings['contact_phone']) && $settings['contact_phone'] !== $footerWaNumber && $settings['contact_phone'] !== '+91 (Contact Available Upon Inquiry)'): ?>
+                  <p style="font-size: 0.82rem; color: #94a3b8; margin-top: 3px;">
+                    Phone: <a href="tel:<?= preg_replace('/[^0-9+]/', '', $settings['contact_phone']) ?>" style="color: inherit; text-decoration: none;"><?= htmlspecialchars($settings['contact_phone']) ?></a>
+                  </p>
+                <?php endif; ?>
               </div>
             </div>
 
@@ -363,5 +395,47 @@ if (!defined('BASE_URL')) {
       });
     };
   </script>
+
+  <!-- Cookie Consent Banner (Dynamic via site_settings: cookie_consent_enabled) -->
+  <?php if (!empty($settings['cookie_consent_enabled'])): ?>
+    <div id="cookieConsentBanner" style="display: none; position: fixed; bottom: 24px; left: 24px; right: 24px; max-width: 480px; z-index: 99999; background: rgba(15, 23, 42, 0.94); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4); color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif;">
+      <div style="display: flex; align-items: flex-start; gap: 14px;">
+        <span style="font-size: 1.6rem; line-height: 1;">🍪</span>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; font-weight: 700; color: #ffffff;">Cookie & Privacy Preferences</h4>
+          <p style="margin: 0 0 14px 0; font-size: 0.82rem; line-height: 1.5; color: #94a3b8;">
+            We use essential cookies to maintain site performance and anonymous telemetry in accordance with our <a href="<?= BASE_URL ?>/privacy-policy" style="color: #00a2ff; text-decoration: underline;">Privacy Policy</a>.
+          </p>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="acceptCookies()" style="background: #0056d6; color: #ffffff; border: none; border-radius: 8px; padding: 8px 16px; font-size: 0.82rem; font-weight: 700; cursor: pointer;">Accept All</button>
+            <button type="button" onclick="dismissCookies()" style="background: rgba(255, 255, 255, 0.1); color: #cbd5e1; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 8px 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer;">Essential Only</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function() {
+        if (!localStorage.getItem('cc_cookie_consent')) {
+          const banner = document.getElementById('cookieConsentBanner');
+          if (banner) banner.style.display = 'block';
+        }
+        window.acceptCookies = function() {
+          localStorage.setItem('cc_cookie_consent', 'accepted');
+          const banner = document.getElementById('cookieConsentBanner');
+          if (banner) banner.style.display = 'none';
+        };
+        window.dismissCookies = function() {
+          localStorage.setItem('cc_cookie_consent', 'essential');
+          const banner = document.getElementById('cookieConsentBanner');
+          if (banner) banner.style.display = 'none';
+        };
+      })();
+    </script>
+  <?php endif; ?>
+
+  <!-- Custom Injected Footer Scripts (Configurable in Admin Settings) -->
+  <?php if (!empty($settings['custom_footer_scripts'])): ?>
+    <?= $settings['custom_footer_scripts'] ?>
+  <?php endif; ?>
 </body>
 </html>

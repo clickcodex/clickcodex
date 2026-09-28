@@ -123,6 +123,29 @@ class Router {
 
         $uri = $this->format($uri);
 
+        // Maintenance Mode Interceptor (Check site_settings: maintenance_mode)
+        if (!str_starts_with($uri, 'admin') && !str_starts_with($uri, 'api') && !str_starts_with($uri, 'public')) {
+            if (session_status() === PHP_SESSION_NONE) {
+                @session_start();
+            }
+            if (empty($_SESSION['admin_user'])) {
+                try {
+                    $mDb = \App\Config\Database::connect();
+                    $mRes = $mDb->query("SELECT setting_value FROM site_settings WHERE setting_key = 'maintenance_mode' LIMIT 1");
+                    if ($mRes && ($mRow = $mRes->fetch_assoc())) {
+                        if ((string)$mRow['setting_value'] === '1') {
+                            http_response_code(503);
+                            header('Retry-After: 3600');
+                            require_once __DIR__ . '/Views/errors/maintenance.php';
+                            return;
+                        }
+                    }
+                } catch (\Throwable $t) {
+                    // Gracefully continue
+                }
+            }
+        }
+
         $action = null;
         $params = [];
         $matchedPattern = null; // track the pattern key for middleware lookup

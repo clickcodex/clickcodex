@@ -514,7 +514,7 @@ if (!empty($caseStudies)) {
           <span>Build a Similar Product</span>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
         </button>
-        <a href="https://wa.me/919876543210?text=Hi%20ClickCodex,%20I%20am%20interested%20in%20a%20solution%20like%20${encodeURIComponent(data.title)}" 
+        <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $settings['whatsapp_number'] ?? '919876543210') ?>?text=<?= urlencode('Hi ClickCodex, I am interested in a solution like ') ?>${encodeURIComponent(data.title)}" 
            target="_blank" rel="noopener noreferrer" class="whatsapp-btn" style="padding: 12px 20px;">
           <span>WhatsApp Quick Discuss</span>
         </a>

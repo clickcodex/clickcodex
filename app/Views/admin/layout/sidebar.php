@@ -104,49 +104,55 @@ $activeNav = $activeNav ?? 'dashboard';
         <span class="nav-counter-badge" style="background: rgba(0, 162, 255, 0.12); color: var(--admin-cyan); font-weight: 700;">Live</span>
       </a>
 
-      <!-- Planned Systems & Modules -->
-      <div class="sidebar-section-label">Planned Features</div>
-
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('Executive Reporting Engine is scheduled for development.', 'info', 'Planned Feature'); return false;">
+      <a href="<?= BASE_URL ?>/admin/settings" class="sidebar-nav-item <?= $activeNav === 'settings' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3,3 21,3 21,21 3,21"/></svg>
-          <span>Reporting</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          <span>Site Settings</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-green); font-weight: 700;">Config</span>
       </a>
 
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('Third-Party Webhook & CRM Integrations are in roadmap.', 'info', 'Planned Feature'); return false;">
+      <!-- Executive Systems & Modules -->
+      <div class="sidebar-section-label">Executive & Systems</div>
+
+      <a href="<?= BASE_URL ?>/admin/reporting" class="sidebar-nav-item <?= $activeNav === 'reporting' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
-          <span>Integrations</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3,3 21,3 21,21 3,21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>Executive Reporting</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(0, 86, 214, 0.1); color: var(--admin-blue); font-weight: 700;">BI</span>
       </a>
 
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('Global System & SMTP Configuration is in roadmap.', 'info', 'Planned Feature'); return false;">
+      <a href="<?= BASE_URL ?>/admin/integrations" class="sidebar-nav-item <?= $activeNav === 'integrations' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l2 2"/></svg>
-          <span>System Settings</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5v14"/><circle cx="12" cy="12" r="9"/></svg>
+          <span>Integrations & Hooks</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(16, 185, 129, 0.12); color: var(--admin-green); font-weight: 700;">Sync</span>
       </a>
 
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('Centralized Notifications Center is scheduled for development.', 'info', 'Planned Feature'); return false;">
+      <a href="<?= BASE_URL ?>/admin/notifications" class="sidebar-nav-item <?= $activeNav === 'notifications' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V6l-8-4-8 4v6c0 6 8 10 8 10z"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
           <span>Notifications Center</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(245, 158, 11, 0.12); color: #f59e0b; font-weight: 700;">Live</span>
       </a>
 
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('Automated Data Export & Sync is scheduled for development.', 'info', 'Planned Feature'); return false;">
+      <a href="<?= BASE_URL ?>/admin/data-export" class="sidebar-nav-item <?= $activeNav === 'data_export' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="M4 9h16"/></svg>
-          <span>Data Export</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Data Export & Sync</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(139, 92, 246, 0.12); color: #8b5cf6; font-weight: 700;">Dump</span>
       </a>
 
-      <a href="#" class="sidebar-nav-item" onclick="window.showToast('RESTful API Access & Secret Key generation is scheduled for development.', 'info', 'Planned Feature'); return false;">
+      <a href="<?= BASE_URL ?>/admin/api-access" class="sidebar-nav-item <?= $activeNav === 'api_access' ? 'active' : '' ?>">
         <div class="sidebar-nav-item-left">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
-          <span>API Access</span>
+          <span>REST API & Keys</span>
         </div>
+        <span class="nav-counter-badge" style="background: rgba(0, 162, 255, 0.12); color: var(--admin-cyan); font-weight: 700;">v1</span>
       </a>
     </nav>
   </div>

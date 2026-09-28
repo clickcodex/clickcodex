@@ -2775,6 +2775,851 @@ class AdminModel {
         }
         return $trends;
     }
+
+    // =========================================================================
+    // GLOBAL SITE SETTINGS SYSTEM METHODS
+    // =========================================================================
+
+    /**
+     * Retrieve all site settings grouped by setting_group
+     */
+    public function getSettingsGrouped(bool $onlyPublic = false): array {
+        $sql = "SELECT id, setting_key, setting_value, setting_group, value_type, description, is_public, updated_at 
+                FROM site_settings ";
+        if ($onlyPublic) {
+            $sql .= "WHERE is_public = 1 ";
+        }
+        $sql .= "ORDER BY setting_group ASC, id ASC";
+
+        $res = $this->db->query($sql);
+        $groups = [
+            'general'   => [],
+            'contact'   => [],
+            'branding'  => [],
+            'seo'       => [],
+            'social'    => [],
+            'analytics' => [],
+            'scripts'   => [],
+            'legal'     => []
+        ];
+
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $group = $row['setting_group'] ?? 'general';
+                if (!isset($groups[$group])) {
+                    $groups[$group] = [];
+                }
+                $groups[$group][] = $row;
+            }
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Retrieve a flat dictionary of key => value
+     */
+    public function getAllSettingsFlat(): array {
+        $res = $this->db->query("SELECT setting_key, setting_value, value_type FROM site_settings");
+        $flat = [];
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $val = $row['setting_value'];
+                if ($row['value_type'] === 'boolean') {
+                    $val = filter_var($val, FILTER_VALIDATE_BOOLEAN);
+                } elseif ($row['value_type'] === 'integer') {
+                    $val = (int)$val;
+                }
+                $flat[$row['setting_key']] = $val;
+            }
+        }
+        return $flat;
+    }
+
+    /**
+     * Get summary KPI statistics of site settings
+     */
+    public function getSettingsStats(): array {
+        $stats = [
+            'total' => 0,
+            'public_count' => 0,
+            'private_count' => 0,
+            'groups_count' => 0,
+            'last_updated' => null
+        ];
+
+        $res = $this->db->query("SELECT 
+            COUNT(*) as total,
+            SUM(CASE WHEN is_public = 1 THEN 1 ELSE 0 END) as public_count,
+            SUM(CASE WHEN is_public = 0 THEN 1 ELSE 0 END) as private_count,
+            COUNT(DISTINCT setting_group) as groups_count,
+            MAX(updated_at) as last_updated
+            FROM site_settings");
+
+        if ($res && ($row = $res->fetch_assoc())) {
+            $stats['total'] = (int)$row['total'];
+            $stats['public_count'] = (int)$row['public_count'];
+            $stats['private_count'] = (int)$row['private_count'];
+            $stats['groups_count'] = (int)$row['groups_count'];
+            $stats['last_updated'] = $row['last_updated'] ? date('M d, Y h:i A', strtotime($row['last_updated'])) : 'Recently';
+        }
+
+        return $stats;
+    }
+
+    /**
+     * Save a batch of settings (key => value)
+     */
+    public function saveSettingsBatch(array $items, int $actorId = 1): array {
+        if (empty($items)) {
+            return ['success' => false, 'error' => 'No settings payload provided for update.'];
+        }
+
+        $stmt = $this->db->prepare("
+            INSERT INTO site_settings (setting_key, setting_value, setting_group, value_type, description, is_public, created_at, updated_at)
+            VALUES (?, ?, ?, 'string', '', 1, NOW(), NOW())
+            ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()
+        ");
+        if (!$stmt) {
+            return ['success' => false, 'error' => 'Database error while preparing statement: ' . $this->db->error];
+        }
+
+        $updatedCount = 0;
+        $updatedKeys = [];
+
+        foreach ($items as $key => $val) {
+            $key = trim((string)$key);
+            if ($key === '') continue;
+
+            if (is_bool($val)) {
+                $strVal = $val ? '1' : '0';
+            } elseif (is_array($val)) {
+                $strVal = json_encode($val, JSON_UNESCAPED_UNICODE);
+            } else {
+                $strVal = (string)$val;
+            }
+
+            // Detect group
+            $group = 'general';
+            if (str_contains($key, 'whatsapp') || str_contains($key, 'phone') || str_contains($key, 'email') || str_contains($key, 'address') || str_contains($key, 'hours')) {
+                $group = 'contact';
+            } elseif (str_contains($key, 'brand') || str_contains($key, 'color') || str_contains($key, 'logo') || str_contains($key, 'favicon') || str_contains($key, 'theme')) {
+                $group = 'branding';
+            } elseif (str_contains($key, 'meta') || str_contains($key, 'seo') || str_contains($key, 'keywords')) {
+                $group = 'seo';
+            } elseif (str_contains($key, 'social')) {
+                $group = 'social';
+            } elseif (str_contains($key, 'analytics') || str_contains($key, 'pixel') || str_contains($key, 'tag_manager')) {
+                $group = 'analytics';
+            } elseif (str_contains($key, 'script')) {
+                $group = 'scripts';
+            } elseif (str_contains($key, 'legal') || str_contains($key, 'cookie') || str_contains($key, 'terms') || str_contains($key, 'privacy')) {
+                $group = 'legal';
+            }
+
+            $stmt->bind_param('sss', $key, $strVal, $group);
+            if ($stmt->execute()) {
+                $updatedCount++;
+                $updatedKeys[] = $key;
+            }
+        }
+        $stmt->close();
+
+        // Keep paired aliases in sync
+        if (isset($items['whatsapp_number'])) {
+            $waVal = (string)$items['whatsapp_number'];
+            $this->saveSetting('contact_whatsapp', $waVal, 'contact', 'string', 'Direct WhatsApp hotline number alias', 1, $actorId);
+        } elseif (isset($items['contact_whatsapp'])) {
+            $waVal = (string)$items['contact_whatsapp'];
+            $this->saveSetting('whatsapp_number', $waVal, 'contact', 'string', 'Official WhatsApp business phone', 1, $actorId);
+        }
+
+        if (isset($items['company_name']) && !isset($items['site_name'])) {
+            $this->saveSetting('site_name', (string)$items['company_name'], 'general', 'string', 'Public brand and site name', 1, $actorId);
+        } elseif (isset($items['site_name']) && !isset($items['company_name'])) {
+            $this->saveSetting('company_name', (string)$items['site_name'], 'general', 'string', 'Official company name', 1, $actorId);
+        }
+        if (isset($items['company_tagline']) && !isset($items['site_tagline'])) {
+            $this->saveSetting('site_tagline', (string)$items['company_tagline'], 'general', 'string', 'Secondary brand slogan', 1, $actorId);
+        } elseif (isset($items['site_tagline']) && !isset($items['company_tagline'])) {
+            $this->saveSetting('company_tagline', (string)$items['site_tagline'], 'general', 'string', 'Brand headline', 1, $actorId);
+        }
+        if (isset($items['brand_primary_color']) && !isset($items['theme_color'])) {
+            $this->saveSetting('theme_color', (string)$items['brand_primary_color'], 'branding', 'string', 'Mobile browser toolbar & theme color', 1, $actorId);
+        }
+
+        $this->logAction($actorId, 'settings_batch_update', 'site_settings', 0, [
+            'updated_keys' => $updatedKeys,
+            'count' => $updatedCount
+        ]);
+
+        return [
+            'success' => true,
+            'updated_count' => $updatedCount,
+            'message' => 'Successfully updated ' . $updatedCount . ' configuration settings.'
+        ];
+    }
+
+    /**
+     * Upsert a single setting
+     */
+    public function saveSetting(string $key, $value, ?string $group = null, ?string $valueType = null, ?string $description = null, ?int $isPublic = null, int $actorId = 1): array {
+        $key = trim($key);
+        if ($key === '') {
+            return ['success' => false, 'error' => 'Setting key cannot be empty.'];
+        }
+
+        $strVal = is_bool($value) ? ($value ? '1' : '0') : (is_array($value) ? json_encode($value) : (string)$value);
+
+        $checkStmt = $this->db->prepare("SELECT id, setting_group, value_type, description, is_public FROM site_settings WHERE setting_key = ? LIMIT 1");
+        $checkStmt->bind_param('s', $key);
+        $checkStmt->execute();
+        $existing = $checkStmt->get_result()->fetch_assoc();
+        $checkStmt->close();
+
+        if ($existing) {
+            $newGroup = $group ?? $existing['setting_group'];
+            $newType = $valueType ?? $existing['value_type'];
+            $newDesc = $description ?? $existing['description'];
+            $newPublic = ($isPublic !== null) ? $isPublic : (int)$existing['is_public'];
+
+            $upStmt = $this->db->prepare("UPDATE site_settings SET setting_value = ?, setting_group = ?, value_type = ?, description = ?, is_public = ?, updated_at = NOW() WHERE setting_key = ?");
+            $upStmt->bind_param('ssssis', $strVal, $newGroup, $newType, $newDesc, $newPublic, $key);
+            $success = $upStmt->execute();
+            $upStmt->close();
+        } else {
+            $newGroup = $group ?? 'general';
+            $newType = $valueType ?? 'string';
+            $newDesc = $description ?? '';
+            $newPublic = ($isPublic !== null) ? $isPublic : 1;
+
+            $insStmt = $this->db->prepare("INSERT INTO site_settings (setting_key, setting_value, setting_group, value_type, description, is_public, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $insStmt->bind_param('sssssi', $key, $strVal, $newGroup, $newType, $newDesc, $newPublic);
+            $success = $insStmt->execute();
+            $insStmt->close();
+        }
+
+        if ($success) {
+            $this->logAction($actorId, 'setting_save', 'site_settings', 0, ['key' => $key, 'value' => substr($strVal, 0, 100)]);
+            return ['success' => true, 'message' => "Setting '{$key}' saved successfully."];
+        }
+
+        return ['success' => false, 'error' => 'Database error: ' . $this->db->error];
+    }
+
+    /**
+     * Delete a custom setting
+     */
+    public function deleteSetting(string $key, int $actorId = 1): array {
+        $stmt = $this->db->prepare("DELETE FROM site_settings WHERE setting_key = ?");
+        $stmt->bind_param('s', $key);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affected > 0) {
+            $this->logAction($actorId, 'setting_delete', 'site_settings', 0, ['key' => $key]);
+            return ['success' => true, 'message' => "Setting '{$key}' deleted successfully."];
+        }
+
+        return ['success' => false, 'error' => "Setting '{$key}' not found."];
+    }
+
+    /**
+     * Export all settings as JSON dump
+     */
+    public function exportSettingsJson(): string {
+        $res = $this->db->query("SELECT setting_key, setting_value, setting_group, value_type, description, is_public FROM site_settings ORDER BY setting_group, setting_key");
+        $export = [
+            'app' => 'ClickCodex Technologies',
+            'version' => '2.0.0',
+            'exported_at' => date('c'),
+            'settings' => []
+        ];
+        if ($res) {
+            while ($row = $res->fetch_assoc()) {
+                $export['settings'][] = $row;
+            }
+        }
+        return json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Import settings from JSON dump
+     */
+    public function importSettingsJson(string $jsonString, int $actorId = 1): array {
+        $data = json_decode($jsonString, true);
+        if (!$data || !isset($data['settings']) || !is_array($data['settings'])) {
+            return ['success' => false, 'error' => 'Invalid settings JSON format.'];
+        }
+
+        $imported = 0;
+        foreach ($data['settings'] as $item) {
+            if (empty($item['setting_key'])) continue;
+            $res = $this->saveSetting(
+                (string)$item['setting_key'],
+                $item['setting_value'] ?? '',
+                $item['setting_group'] ?? 'general',
+                $item['value_type'] ?? 'string',
+                $item['description'] ?? '',
+                isset($item['is_public']) ? (int)$item['is_public'] : 1,
+                $actorId
+            );
+            if ($res['success']) {
+                $imported++;
+            }
+        }
+
+        $this->logAction($actorId, 'settings_import', 'site_settings', 0, ['count' => $imported]);
+        return ['success' => true, 'count' => $imported, 'message' => "Successfully imported {$imported} configuration settings."];
+    }
+
+    // =========================================================================
+    // EXECUTIVE REPORTING & REVENUE ANALYTICS ENGINE
+    // =========================================================================
+
+    /**
+     * Compile comprehensive performance and conversion metrics for executive reporting
+     */
+    public function getReportingData(string $range = '30d'): array {
+        $intervalSql = "INTERVAL 30 DAY";
+        if ($range === '7d') $intervalSql = "INTERVAL 7 DAY";
+        elseif ($range === '90d') $intervalSql = "INTERVAL 90 DAY";
+        elseif ($range === '1y') $intervalSql = "INTERVAL 1 YEAR";
+        elseif ($range === 'all') $intervalSql = "INTERVAL 10 YEAR";
+
+        // Total inquiries in range
+        $res = $this->db->query("SELECT COUNT(*) as c FROM contact_inquiries WHERE created_at >= NOW() - {$intervalSql}");
+        $totalInquiries = (int)($res ? $res->fetch_assoc()['c'] : 0);
+
+        // Status breakdown
+        $statusCounts = ['new' => 0, 'contacted' => 0, 'in_discussion' => 0, 'proposal_sent' => 0, 'won' => 0, 'archived' => 0];
+        $res = $this->db->query("SELECT status, COUNT(*) as c FROM contact_inquiries WHERE created_at >= NOW() - {$intervalSql} GROUP BY status");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $statusCounts[$r['status']] = (int)$r['c'];
+            }
+        }
+
+        // Conversion rate
+        $converted = $statusCounts['won'] + $statusCounts['proposal_sent'] + $statusCounts['in_discussion'];
+        $conversionRate = $totalInquiries > 0 ? round(($converted / $totalInquiries) * 100, 1) : 0;
+
+        // Estimated Pipeline Value (Heuristic based on budget bracket)
+        $pipelineValue = 0;
+        $budgetMultipliers = [
+            '< ₹25k' => 20000, '₹25k - ₹50k' => 37500, '₹50k - ₹1L' => 75000, 
+            '₹1L - ₹2.5L' => 175000, '₹2.5L+' => 350000,
+            '< $1k' => 75000, '$1k - $3k' => 180000, '$3k - $5k' => 350000, '$5k+' => 550000
+        ];
+        $res = $this->db->query("SELECT budget_bracket, COUNT(*) as c FROM contact_inquiries WHERE created_at >= NOW() - {$intervalSql} AND status NOT IN ('archived') GROUP BY budget_bracket");
+        $budgetBreakdown = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $bracket = $r['budget_bracket'] ?: 'Unspecified';
+                $cnt = (int)$r['c'];
+                $budgetBreakdown[] = [
+                    'bracket' => $bracket,
+                    'count' => $cnt
+                ];
+                $multiplier = $budgetMultipliers[$bracket] ?? 50000;
+                $pipelineValue += ($cnt * $multiplier);
+            }
+        }
+
+        // Daily lead trend (last 14 days)
+        $dailyTrends = [];
+        $res = $this->db->query("SELECT DATE(created_at) as dt, COUNT(*) as c FROM contact_inquiries WHERE created_at >= NOW() - INTERVAL 14 DAY GROUP BY DATE(created_at) ORDER BY dt ASC");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $dailyTrends[] = [
+                    'date' => (string)$r['dt'],
+                    'count' => (int)$r['c']
+                ];
+            }
+        }
+
+        // Top requested services
+        $servicePopularity = [];
+        $res = $this->db->query("SELECT selected_services, interested_service FROM contact_inquiries WHERE created_at >= NOW() - {$intervalSql}");
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                if (!empty($r['interested_service'])) {
+                    $svc = trim((string)$r['interested_service']);
+                    if ($svc !== '') {
+                        $servicePopularity[$svc] = ($servicePopularity[$svc] ?? 0) + 1;
+                    }
+                }
+                if (!empty($r['selected_services'])) {
+                    $arr = json_decode($r['selected_services'], true);
+                    if (is_array($arr)) {
+                        foreach ($arr as $svc) {
+                            $svc = trim((string)$svc);
+                            if ($svc === '') continue;
+                            $servicePopularity[$svc] = ($servicePopularity[$svc] ?? 0) + 1;
+                        }
+                    }
+                }
+            }
+        }
+        arsort($servicePopularity);
+
+        // Advisor Archetype Submissions in range
+        $archetypeCount = 0;
+        $res = $this->db->query("SELECT COUNT(*) as c FROM advisor_submissions WHERE created_at >= NOW() - {$intervalSql}");
+        if ($res) {
+            $archetypeCount = (int)($res->fetch_assoc()['c'] ?? 0);
+        }
+
+        return [
+            'range' => $range,
+            'total_inquiries' => $totalInquiries,
+            'status_counts' => $statusCounts,
+            'conversion_rate' => $conversionRate,
+            'pipeline_value' => $pipelineValue,
+            'budget_breakdown' => $budgetBreakdown,
+            'daily_trends' => $dailyTrends,
+            'service_popularity' => array_slice($servicePopularity, 0, 6, true),
+            'archetype_count' => $archetypeCount
+        ];
+    }
+
+    // =========================================================================
+    // THIRD-PARTY WEBHOOKS & CRM INTEGRATION ENGINE
+    // =========================================================================
+
+    /**
+     * Fetch all registered webhooks
+     */
+    public function getWebhooks(): array {
+        $res = $this->db->query("SELECT * FROM webhook_integrations ORDER BY id DESC");
+        $list = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $list[] = $r;
+            }
+        }
+        return $list;
+    }
+
+    /**
+     * Save or update a webhook integration
+     */
+    public function saveWebhook(array $data, int $actorId = 1): array {
+        $id = !empty($data['id']) ? (int)$data['id'] : 0;
+        $name = trim((string)($data['name'] ?? ''));
+        $targetUrl = trim((string)($data['target_url'] ?? ''));
+        $eventType = trim((string)($data['event_type'] ?? 'inquiry.created'));
+        $secretToken = trim((string)($data['secret_token'] ?? ''));
+        $isActive = isset($data['is_active']) ? (int)$data['is_active'] : 1;
+        $headersJson = !empty($data['headers_json']) ? trim((string)$data['headers_json']) : null;
+
+        if ($name === '' || !filter_var($targetUrl, FILTER_VALIDATE_URL)) {
+            return ['success' => false, 'error' => 'Please provide a valid integration name and HTTP/HTTPS destination URL.'];
+        }
+
+        if ($id > 0) {
+            $stmt = $this->db->prepare("UPDATE webhook_integrations SET name = ?, target_url = ?, event_type = ?, secret_token = ?, headers_json = ?, is_active = ?, updated_at = NOW() WHERE id = ?");
+            $stmt->bind_param('sssssii', $name, $targetUrl, $eventType, $secretToken, $headersJson, $isActive, $id);
+            $success = $stmt->execute();
+            $stmt->close();
+            $this->logAction($actorId, 'webhook_update', 'webhook_integrations', $id, ['name' => $name]);
+            return ['success' => $success, 'message' => "Webhook '{$name}' updated successfully."];
+        } else {
+            $stmt = $this->db->prepare("INSERT INTO webhook_integrations (name, target_url, event_type, secret_token, headers_json, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())");
+            $stmt->bind_param('sssssi', $name, $targetUrl, $eventType, $secretToken, $headersJson, $isActive);
+            $success = $stmt->execute();
+            $newId = $this->db->insert_id;
+            $stmt->close();
+            $this->logAction($actorId, 'webhook_create', 'webhook_integrations', $newId, ['name' => $name]);
+            return ['success' => $success, 'message' => "Webhook integration '{$name}' configured successfully.", 'id' => $newId];
+        }
+    }
+
+    /**
+     * Delete a webhook
+     */
+    public function deleteWebhook(int $id, int $actorId = 1): array {
+        $stmt = $this->db->prepare("DELETE FROM webhook_integrations WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affected > 0) {
+            $this->logAction($actorId, 'webhook_delete', 'webhook_integrations', $id);
+            return ['success' => true, 'message' => 'Webhook deleted successfully.'];
+        }
+        return ['success' => false, 'error' => 'Webhook not found.'];
+    }
+
+    /**
+     * Test a webhook with a mock JSON payload
+     */
+    public function testWebhook(int $id): array {
+        $stmt = $this->db->prepare("SELECT * FROM webhook_integrations WHERE id = ? LIMIT 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $hook = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$hook) {
+            return ['success' => false, 'error' => 'Webhook not found.'];
+        }
+
+        $mockPayload = [
+            'event' => $hook['event_type'] ?: 'inquiry.test_ping',
+            'timestamp' => date('c'),
+            'sender' => 'ClickCodex Technologies Webhook Engine',
+            'data' => [
+                'id' => 9999,
+                'client_name' => 'Alexander Vance',
+                'company_name' => 'Vance Digital Holdings',
+                'email' => 'alex@vanceholdings.com',
+                'phone' => '+919876543210',
+                'budget' => '₹1L - ₹2.5L',
+                'services' => ['Full-Stack Web Development', 'UI/UX Design'],
+                'message' => 'This is a verified test payload dispatched from ClickCodex Admin Console.'
+            ]
+        ];
+
+        $payloadJson = json_encode($mockPayload);
+        $ch = curl_init($hook['target_url']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+        $headers = [
+            'Content-Type: application/json',
+            'User-Agent: ClickCodex-Webhook-Worker/2.0'
+        ];
+        if (!empty($hook['secret_token'])) {
+            $sig = hash_hmac('sha256', $payloadJson, $hook['secret_token']);
+            $headers[] = 'X-ClickCodex-Signature: ' . $sig;
+        }
+        if (!empty($hook['headers_json'])) {
+            $extra = json_decode($hook['headers_json'], true);
+            if (is_array($extra)) {
+                foreach ($extra as $hk => $hv) {
+                    $headers[] = "{$hk}: {$hv}";
+                }
+            }
+        }
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $startTime = microtime(true);
+        $response = curl_exec($ch);
+        $latency = round((microtime(true) - $startTime) * 1000, 1);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        // Record execution outcome
+        $up = $this->db->prepare("UPDATE webhook_integrations SET last_triggered_at = NOW(), last_response_code = ? WHERE id = ?");
+        $up->bind_param('ii', $httpCode, $id);
+        $up->execute();
+        $up->close();
+
+        if ($curlError) {
+            return ['success' => false, 'error' => "cURL Network Error: {$curlError} (Destination unreachable)"];
+        }
+
+        return [
+            'success' => ($httpCode >= 200 && $httpCode < 300),
+            'http_code' => $httpCode,
+            'latency_ms' => $latency,
+            'response' => substr((string)$response, 0, 300),
+            'message' => "Test ping sent to destination. Server responded with HTTP {$httpCode} in {$latency}ms."
+        ];
+    }
+
+    /**
+     * Dispatch live webhook event across active subscribers
+     */
+    public function triggerWebhooks(string $eventType, array $payload): array {
+        $stmt = $this->db->prepare("SELECT * FROM webhook_integrations WHERE is_active = 1 AND (event_type = ? OR event_type = '*')");
+        $stmt->bind_param('s', $eventType);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $hooks = [];
+        while ($row = $res->fetch_assoc()) {
+            $hooks[] = $row;
+        }
+        $stmt->close();
+
+        $dispatched = 0;
+        foreach ($hooks as $hook) {
+            $payloadJson = json_encode([
+                'event' => $eventType,
+                'timestamp' => date('c'),
+                'data' => $payload
+            ]);
+
+            $ch = curl_init($hook['target_url']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payloadJson);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+
+            $headers = ['Content-Type: application/json', 'User-Agent: ClickCodex-Webhook-Worker/2.0'];
+            if (!empty($hook['secret_token'])) {
+                $headers[] = 'X-ClickCodex-Signature: ' . hash_hmac('sha256', $payloadJson, $hook['secret_token']);
+            }
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            $up = $this->db->prepare("UPDATE webhook_integrations SET last_triggered_at = NOW(), last_response_code = ? WHERE id = ?");
+            $up->bind_param('ii', $httpCode, $hook['id']);
+            $up->execute();
+            $up->close();
+            $dispatched++;
+        }
+
+        return ['success' => true, 'dispatched' => $dispatched];
+    }
+
+    // =========================================================================
+    // SYSTEM NOTIFICATIONS & AUDIT DISPATCH HUB
+    // =========================================================================
+
+    /**
+     * Retrieve system notifications with optional category filtering
+     */
+    public function getSystemNotifications(string $category = 'all', int $limit = 50): array {
+        $sql = "SELECT * FROM system_notifications ";
+        if ($category !== 'all') {
+            $catSafe = $this->db->real_escape_string($category);
+            $sql .= "WHERE category = '{$catSafe}' ";
+        }
+        $sql .= "ORDER BY created_at DESC LIMIT " . (int)$limit;
+
+        $res = $this->db->query($sql);
+        $list = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $list[] = $r;
+            }
+        }
+        return $list;
+    }
+
+    /**
+     * Mark a single notification as read
+     */
+    public function markNotificationRead(int $id): array {
+        $stmt = $this->db->prepare("UPDATE system_notifications SET is_read = 1 WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $ok = $stmt->execute();
+        $stmt->close();
+        return ['success' => $ok, 'id' => $id];
+    }
+
+    /**
+     * Mark all notifications as read
+     */
+    public function markAllNotificationsRead(): array {
+        $ok = (bool)$this->db->query("UPDATE system_notifications SET is_read = 1 WHERE is_read = 0");
+        return ['success' => $ok, 'message' => 'All notifications marked as read.'];
+    }
+
+    /**
+     * Delete read notifications
+     */
+    public function clearReadNotifications(): array {
+        $ok = (bool)$this->db->query("DELETE FROM system_notifications WHERE is_read = 1");
+        return ['success' => $ok, 'message' => 'Cleared all read notifications.'];
+    }
+
+    /**
+     * Create a new system notification
+     */
+    public function addSystemNotification(string $category, string $title, string $message, ?string $link = null): int {
+        $stmt = $this->db->prepare("INSERT INTO system_notifications (category, title, message, link, is_read, created_at) VALUES (?, ?, ?, ?, 0, NOW())");
+        $stmt->bind_param('ssss', $category, $title, $message, $link);
+        $ok = $stmt->execute();
+        $newId = (int)$this->db->insert_id;
+        $stmt->close();
+        return $ok ? $newId : 0;
+    }
+
+    // =========================================================================
+    // RESTFUL API ACCESS & SECRET KEY MANAGER
+    // =========================================================================
+
+    /**
+     * Retrieve all issued API Keys
+     */
+    public function getApiKeys(): array {
+        $res = $this->db->query("SELECT id, key_name, api_key, scopes, is_active, last_used_at, created_at FROM api_keys ORDER BY id DESC");
+        $keys = [];
+        if ($res) {
+            while ($r = $res->fetch_assoc()) {
+                $keys[] = $r;
+            }
+        }
+        return $keys;
+    }
+
+    /**
+     * Create a brand new API Key pair
+     */
+    public function createApiKey(string $name, $scopes, int $actorId = 1): array {
+        $name = trim($name);
+        if ($name === '') {
+            return ['success' => false, 'error' => 'API Key descriptive name is required.'];
+        }
+
+        $scopesStr = is_array($scopes) ? implode(',', $scopes) : (string)$scopes;
+        if (empty($scopesStr)) {
+            $scopesStr = 'leads:write,content:read';
+        }
+
+        $apiKey = 'cc_live_' . bin2hex(random_bytes(16));
+        $apiSecret = bin2hex(random_bytes(24));
+
+        $stmt = $this->db->prepare("INSERT INTO api_keys (key_name, api_key, api_secret, scopes, is_active, created_at) VALUES (?, ?, ?, ?, 1, NOW())");
+        $stmt->bind_param('ssss', $name, $apiKey, $apiSecret, $scopesStr);
+        $success = $stmt->execute();
+        $newId = $this->db->insert_id;
+        $stmt->close();
+
+        if ($success) {
+            $this->logAction($actorId, 'api_key_create', 'api_keys', $newId, ['key_name' => $name]);
+            return [
+                'success' => true,
+                'id' => $newId,
+                'message' => "API Key '{$name}' generated successfully.",
+                'key_name' => $name,
+                'api_key' => $apiKey,
+                'api_secret' => $apiSecret,
+                'scopes' => $scopesStr
+            ];
+        }
+
+        return ['success' => false, 'error' => 'Database error generating API key: ' . $this->db->error];
+    }
+
+    /**
+     * Revoke / Delete an API key
+     */
+    public function revokeApiKey(int $id, int $actorId = 1): array {
+        $stmt = $this->db->prepare("DELETE FROM api_keys WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affected > 0) {
+            $this->logAction($actorId, 'api_key_revoke', 'api_keys', $id);
+            return ['success' => true, 'message' => 'API Key revoked successfully.'];
+        }
+        return ['success' => false, 'error' => 'API Key not found.'];
+    }
+
+    /**
+     * Toggle active status of API key
+     */
+    public function toggleApiKey(int $id, int $actorId = 1): array {
+        $stmt = $this->db->prepare("UPDATE api_keys SET is_active = IF(is_active = 1, 0, 1), updated_at = NOW() WHERE id = ?");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $affected = $stmt->affected_rows;
+        $stmt->close();
+
+        if ($affected > 0) {
+            $this->logAction($actorId, 'api_key_toggle', 'api_keys', $id);
+            return ['success' => true, 'message' => 'API Key status toggled successfully.'];
+        }
+        return ['success' => false, 'error' => 'API Key not found.'];
+    }
+
+    /**
+     * Validate incoming API key authentication
+     */
+    public function validateApiKey(string $key, string $requiredScope = ''): ?array {
+        $stmt = $this->db->prepare("SELECT * FROM api_keys WHERE api_key = ? AND is_active = 1 LIMIT 1");
+        $stmt->bind_param('s', $key);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+
+        if (!$row) {
+            return null;
+        }
+
+        if (!empty($requiredScope)) {
+            $scopes = explode(',', (string)$row['scopes']);
+            if (!in_array('*', $scopes, true) && !in_array($requiredScope, $scopes, true)) {
+                return null;
+            }
+        }
+
+        // Update last used timestamp
+        $this->db->query("UPDATE api_keys SET last_used_at = NOW() WHERE id = " . (int)$row['id']);
+
+        return $row;
+    }
+
+    // =========================================================================
+    // SYSTEM BACKUPS & FULL DATABASE EXPORT ENGINE
+    // =========================================================================
+
+    /**
+     * Generate complete MySQL SQL Dump of all tables and data
+     */
+    public function exportDatabaseSql(): string {
+        $tables = [];
+        $res = $this->db->query("SHOW TABLES");
+        if ($res) {
+            while ($r = $res->fetch_row()) {
+                $tables[] = $r[0];
+            }
+        }
+
+        $sql = "-- =====================================================================\n";
+        $sql .= "-- ClickCodex Technologies Complete Database Backup\n";
+        $sql .= "-- Generated: " . date('Y-m-d H:i:s') . "\n";
+        $sql .= "-- Database: clickcodex_db\n";
+        $sql .= "-- =====================================================================\n\n";
+        $sql .= "SET FOREIGN_KEY_CHECKS = 0;\n\n";
+
+        foreach ($tables as $tbl) {
+            // Drop & Create Table DDL
+            $sql .= "-- -------------------------------------------------------------\n";
+            $sql .= "-- Structure for table `{$tbl}`\n";
+            $sql .= "-- -------------------------------------------------------------\n";
+            $sql .= "DROP TABLE IF EXISTS `{$tbl}`;\n";
+            $cRes = $this->db->query("SHOW CREATE TABLE `{$tbl}`");
+            if ($cRes && ($cRow = $cRes->fetch_row())) {
+                $sql .= $cRow[1] . ";\n\n";
+            }
+
+            // Dump data
+            $dRes = $this->db->query("SELECT * FROM `{$tbl}`");
+            if ($dRes && $dRes->num_rows > 0) {
+                $sql .= "-- Data for table `{$tbl}`\n";
+                while ($row = $dRes->fetch_assoc()) {
+                    $cols = array_map(fn($c) => "`{$c}`", array_keys($row));
+                    $vals = array_map(function($v) {
+                        if ($v === null) return "NULL";
+                        return "'" . $this->db->real_escape_string((string)$v) . "'";
+                    }, array_values($row));
+
+                    $sql .= "INSERT INTO `{$tbl}` (" . implode(', ', $cols) . ") VALUES (" . implode(', ', $vals) . ");\n";
+                }
+                $sql .= "\n";
+            }
+        }
+
+        $sql .= "SET FOREIGN_KEY_CHECKS = 1;\n";
+        return $sql;
+    }
 }
+
 
 
